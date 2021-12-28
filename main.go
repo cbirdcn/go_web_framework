@@ -1,47 +1,35 @@
 package main
 
 import (
+	"go_web_framework/frame" // go mod init go_web_framework后，从module/frame导入包
 	"fmt"
 	"log"
 	"net/http"
 )
 
-// Engine is the uni handler for all requests
-type Engine struct{}
+func main(){
+	// 调用框架实例化
+	r := frame.New()
 
-// type HandlerFunc func(ResponseWriter, *Request)
-// 参数 ResponseWriter 可以构造针对请求 Request 的响应。
-func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) ()  {
-	// 路由
-	switch r.URL.Path {
-	case "/":
+	// 区分协议类型，第二个参数是HandlerFunc。每个路由pattern可以有自己的handlerFunc
+	r.GET("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Fprintf(w, "URL.Path = %q \n", r.URL.Path)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-	case "/hello":
-		for k,v := range r.Header {
+	})
+
+	r.GET("/hello", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
 			_, err := fmt.Fprintf(w, "Header[%q] = %q\n", k, v)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
 		}
-	default:
-		_, err := fmt.Fprintf(w, "404 NOT FOUND: %s \n", r.URL.Path)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	}
-}
+	})
 
-func main(){
-	// Engine type 实现了接口 Handler，就可以作为实例传入ListenAndServe中了
-	engine := new(Engine)
-	// ListenAndServe listens on the TCP network address addr and then calls
-	// Serve with handler to handle requests on incoming connections.
-	// 参数handler是一个接口，需要实现方法 ServeHTTP() ，也就是说，只要传入任何实现了 ServerHTTP 接口的实例，所有的HTTP请求，就都交给该实例处理了。
-	// engine实例拦截了所有的HTTP请求，请求有了统一的控制入口，就可以在实例中自定义路由、中间件、日志、异常处理等
-	err := http.ListenAndServe(":80", engine)
+	// 框架启动http服务
+	err := r.Run(":80")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
